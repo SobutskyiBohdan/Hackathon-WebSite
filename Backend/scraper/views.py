@@ -112,7 +112,7 @@ class BookListView(BookQuerysetMixin, ListAPIView):
         search = self.request.query_params.get('search', None)
         
         if genre:
-            queryset = queryset.filter(genre__icontains=genre)
+            queryset = queryset.filter(genre__name__icontains=genre)
             
         if year_from:
             try:
@@ -305,7 +305,7 @@ class BookSearchView(BookQuerysetMixin, ListAPIView):
         
         genre = self.request.query_params.get('genre')
         if genre:
-            filters['genre__icontains'] = genre
+            filters['genre__name__icontains'] = genre
             
         year_from = self.request.query_params.get('year_from')
         if year_from:
