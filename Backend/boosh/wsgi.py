@@ -1,5 +1,5 @@
 """
-WSGI config for ebosh_backend project.
+WSGI config for book-shelf project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 

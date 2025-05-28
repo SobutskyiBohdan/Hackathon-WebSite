@@ -1,5 +1,5 @@
 """
-URL configuration for ebosh_backend project.
+URL configuration for book-shelf project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/5.2/topics/http/urls/
@@ -28,7 +28,7 @@ urlpatterns = [
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/', include('accounts.urls')),
-    path('scraping/', include('scraper.urls'))
+    path('scraping/', include('scraper.urls')),
 ]
 
 if settings.DEBUG:

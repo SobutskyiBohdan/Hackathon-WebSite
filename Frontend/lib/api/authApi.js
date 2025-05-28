@@ -33,14 +33,22 @@ export const authApi = createApi({
   endpoints: (builder) => ({
     login: builder.mutation({
       query: (credentials) => {
+        // ВИПРАВЛЕННЯ: Трансформуємо usernameOrEmail в username
+        const transformedCredentials = {
+          username: credentials.usernameOrEmail || credentials.username,
+          password: credentials.password,
+        }
+
         const requestConfig = {
           url: "/api/login/",
           method: "POST",
-          body: credentials,
+          body: transformedCredentials, // Використовуємо трансформовані дані
         }
 
         // Debug в режимі розробки
         if (process.env.NODE_ENV === "development") {
+          console.log("🔧 Original credentials:", credentials)
+          console.log("🔧 Transformed credentials:", transformedCredentials)
           debugRequest(`${process.env.NEXT_PUBLIC_API_URL}/api/login/`, requestConfig)
         }
 
@@ -48,6 +56,7 @@ export const authApi = createApi({
       },
       transformErrorResponse: (response, meta, arg) => {
         console.error("🚨 Login API Error:", response)
+        console.error("🚨 Request data that failed:", arg)
         return response
       },
     }),
