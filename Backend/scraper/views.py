@@ -110,7 +110,7 @@ class BookListView(BookQuerysetMixin, ListAPIView):
         title = self.request.query_params.get('title', None)
         author = self.request.query_params.get('author', None)
         search = self.request.query_params.get('search', None)
-        
+
         if genre:
             queryset = queryset.filter(genre__name__icontains=genre)
             

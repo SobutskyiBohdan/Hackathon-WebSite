@@ -27,6 +27,7 @@ class Book(models.Model):
     title = models.CharField(max_length=255, verbose_name='title')
     author = models.CharField(max_length=255, verbose_name='author')
     isbn = models.CharField(max_length=20, blank=True, null=True, verbose_name='ISBN')
+    image = models.ImageField(upload_to='book_covers/', blank=True, null=True)
     genre = models.ForeignKey(
         Genre, 
         on_delete=models.SET_NULL, 
