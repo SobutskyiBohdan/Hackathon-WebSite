@@ -198,6 +198,7 @@ EMAIL_USE_TLS = False
 EMAIL_USE_SSL = False
 EMAIL_HOST_USER = ''
 EMAIL_HOST_PASSWORD = ''
+
 DEFAULT_FROM_EMAIL = 'noreply@bookstore.local'
 
 SIMPLE_JWT = {
@@ -239,3 +240,6 @@ SIMPLE_JWT = {
     "SLIDING_TOKEN_OBTAIN_SERIALIZER": "rest_framework_simplejwt.serializers.TokenObtainSlidingSerializer",
     "SLIDING_TOKEN_REFRESH_SERIALIZER": "rest_framework_simplejwt.serializers.TokenRefreshSlidingSerializer",
 }
+
+DEFAULT_FROM_EMAIL = 'noreply@bookstore.local'
+

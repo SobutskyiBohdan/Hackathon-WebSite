@@ -1,5 +1,9 @@
 """
+<<<<<<< HEAD
 URL configuration for boosh_backend project.
+=======
+URL configuration for book-shelf project.
+>>>>>>> 9e995e8b415d1f03c7c200a5d070b51318fa6822
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/5.2/topics/http/urls/
@@ -28,7 +32,7 @@ urlpatterns = [
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/', include('accounts.urls')),
-    path('scraping/', include('scraper.urls'))
+    path('scraping/', include('scraper.urls')),
 ]
 
 if settings.DEBUG:
