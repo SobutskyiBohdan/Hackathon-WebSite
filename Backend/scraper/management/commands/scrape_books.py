@@ -39,17 +39,13 @@ class BookScraper:
                     return None
     
     def download_image(self, image_url, retries=3):
-        """Download image and return content with filename"""
         for attempt in range(retries):
             try:
                 response = self.session.get(image_url, timeout=15)
                 response.raise_for_status()
-                
-                # Generate filename from URL and content hash
                 parsed_url = urlparse(image_url)
                 original_filename = os.path.basename(parsed_url.path)
                 
-                # If no extension, try to detect from content-type
                 if not os.path.splitext(original_filename)[1]:
                     content_type = response.headers.get('content-type', '')
                     if 'jpeg' in content_type or 'jpg' in content_type:
@@ -59,9 +55,8 @@ class BookScraper:
                     elif 'gif' in content_type:
                         original_filename += '.gif'
                     else:
-                        original_filename += '.jpg'  # Default
+                        original_filename += '.jpg'  
                 
-                # Create unique filename using content hash
                 content_hash = hashlib.md5(response.content).hexdigest()[:8]
                 name, ext = os.path.splitext(original_filename)
                 filename = f"{name}_{content_hash}{ext}"
@@ -140,7 +135,6 @@ class BookScraper:
                 if len(links) >= 3: 
                     genre = links[2].text.strip()
             
-            # Extract image URL
             image_url = None
             image_elem = soup.find('div', class_='item active')
             if image_elem:
@@ -148,7 +142,6 @@ class BookScraper:
                 if img_tag and img_tag.get('src'):
                     image_url = urljoin(book_url, img_tag['src'])
             
-            # Download image if found
             image_content = None
             image_filename = None
             if image_url:
@@ -161,7 +154,6 @@ class BookScraper:
             
             return {
                 'title': title,
-                'author': product_info.get('Author', 'Unknown'),
                 'isbn': product_info.get('ISBN', ''),
                 'genre': genre,
                 'price': price,
@@ -169,7 +161,6 @@ class BookScraper:
                 'description': description,
                 'in_stock': in_stock,
                 'availability': product_info.get('Availability', ''),
-                'year': self.extract_year(product_info.get('Publication Date', '')),
                 'url': book_url,
                 'image_url': image_url,
                 'image_content': image_content,
@@ -179,15 +170,6 @@ class BookScraper:
         except Exception as e:
             logger.error(f"Parsing book error {book_url}: {e}")
             return None
-    
-    def extract_year(self, date_string):
-        if not date_string:
-            return None
-
-        year_match = re.search(r'\b(19|20)\d{2}\b', date_string)
-        if year_match:
-            return int(year_match.group())
-        return None
     
     def scrape_books_from_page(self, page_url):
         response = self.get_page(page_url)
@@ -319,7 +301,6 @@ class Command(BaseCommand):
                         name=book_data['genre']
                     )
                     
-                    # Prepare defaults dict
                     defaults = {
                         'isbn': book_data['isbn'],
                         'genre': genre,
@@ -327,26 +308,21 @@ class Command(BaseCommand):
                         'rating': book_data['rating'],
                         'description': book_data['description'],
                         'in_stock': book_data['in_stock'],
-                        'publication_year': book_data['year'],
                         'source_url': book_data['url']
                     }
                     
                     book, created = Book.objects.update_or_create(
                         title=book_data['title'],
-                        author=book_data['author'],
                         defaults=defaults
                     )
                     
-                    # Handle image saving
                     if not skip_images and book_data['image_content'] and book_data['image_filename']:
                         try:
-                            # Save image to book model
                             image_file = ContentFile(
                                 book_data['image_content'], 
                                 name=book_data['image_filename']
                             )
                             
-                            # Assuming your Book model has an 'image' ImageField
                             book.image.save(book_data['image_filename'], image_file, save=True)
                             
                             if verbose:

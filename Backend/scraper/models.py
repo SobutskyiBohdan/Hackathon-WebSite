@@ -25,7 +25,6 @@ class Book(models.Model):
     ]
     
     title = models.CharField(max_length=255, verbose_name='title')
-    author = models.CharField(max_length=255, verbose_name='author')
     isbn = models.CharField(max_length=20, blank=True, null=True, verbose_name='ISBN')
     image = models.ImageField(upload_to='book_covers/', blank=True, null=True)
     genre = models.ForeignKey(
@@ -36,15 +35,6 @@ class Book(models.Model):
         verbose_name='Жанр'
     )
     description = models.TextField(blank=True, null=True, verbose_name='Description')
-    publication_year = models.IntegerField(
-        blank=True, 
-        null=True,
-        validators=[
-            MinValueValidator(1000),
-            MaxValueValidator(2030)
-        ],
-        verbose_name='Publication year'
-    )
     price = models.DecimalField(
         max_digits=10, 
         decimal_places=2, 
@@ -70,18 +60,15 @@ class Book(models.Model):
         ordering = ['-created_at']
         verbose_name = 'Book'
         verbose_name_plural = 'Books'
-        unique_together = ['title', 'author']
         
         indexes = [
             models.Index(fields=['title']),
-            models.Index(fields=['author']),
             models.Index(fields=['genre']),
-            models.Index(fields=['publication_year']),
             models.Index(fields=['rating']),
         ]
     
     def __str__(self):
-        return f"{self.title} - {self.author}"
+        return f"{self.title}"
     
     def get_absolute_url(self):
         return reverse('book-detail', kwargs={'pk': self.pk})
@@ -111,8 +98,8 @@ class ScrapingLog(models.Model):
     
     class Meta:
         ordering = ['-started_at']
-        verbose_name = 'Лог скрапінгу'
-        verbose_name_plural = 'Логи скрапінгу'
+        verbose_name = 'Scraping log'
+        verbose_name_plural = 'Scraping logs'
     
     def __str__(self):
         return f"Scraping {self.started_at.strftime('%Y-%m-%d %H:%M')} - {self.status}"

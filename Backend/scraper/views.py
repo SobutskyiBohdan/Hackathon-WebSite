@@ -26,6 +26,7 @@ from rest_framework.mixins import (
 )
 from rest_framework.response import Response
 from rest_framework.permissions import IsAdminUser
+from rest_framework import status, permissions
 from django_filters.rest_framework import DjangoFilterBackend
 from django_filters import rest_framework as django_filters
 
@@ -40,27 +41,10 @@ class BookFilter(django_filters.FilterSet):
         help_text="Genre filtration"
     )
     
-    year_from = django_filters.NumberFilter(
-        field_name='publication_year', 
-        lookup_expr='gte',
-        help_text="Publishing year(from)"
-    )
-    year_to = django_filters.NumberFilter(
-        field_name='publication_year', 
-        lookup_expr='lte',
-        help_text="Publishing year(to)"
-    )
-    
     title = django_filters.CharFilter(
         field_name='title',
         lookup_expr='icontains',
         help_text="Searching by book's name"
-    )
-    
-    author = django_filters.CharFilter(
-        field_name='author',
-        lookup_expr='icontains',
-        help_text="Searching by author"
     )
     
     search = django_filters.CharFilter(
@@ -70,12 +54,11 @@ class BookFilter(django_filters.FilterSet):
     
     class Meta:
         model = Book
-        fields = ['genre', 'year_from', 'year_to', 'title', 'author', 'search']
+        fields = ['genre', 'title', 'search']
     
     def filter_search(self, queryset, name, value):
         return queryset.filter(
             Q(title__icontains=value) | 
-            Q(author__icontains=value) |
             Q(description__icontains=value)
         )
 
@@ -93,14 +76,10 @@ class BookQuerysetMixin:
         filters.OrderingFilter
     ]
     filterset_class = BookFilter
-    search_fields = ['title', 'author', 'description', 'genre', 'image']
-    ordering_fields = ['title', 'author', 'publication_year', 'created_at']
+    search_fields = ['title', 'description', 'genre', 'image']
+    ordering_fields = ['title', 'created_at']
     ordering = ['-created_at']  
 
-
-from django.db.models import Q
-from rest_framework.generics import ListAPIView
-from rest_framework.response import Response
 
 class BookListView(BookQuerysetMixin, ListAPIView):
     serializer_class = BookListSerializer
@@ -109,47 +88,25 @@ class BookListView(BookQuerysetMixin, ListAPIView):
         queryset = super().get_queryset()
         
         genre = self.request.query_params.get('genre', None)
-        year_from = self.request.query_params.get('year_from', None)
-        year_to = self.request.query_params.get('year_to', None)
         title = self.request.query_params.get('title', None)
-        author = self.request.query_params.get('author', None)
         search = self.request.query_params.get('search', None)
         image = self.request.query_params.get('image', None)
 
         if genre:
             queryset = queryset.filter(genre__name__icontains=genre)
-            
-        if year_from:
-            try:
-                queryset = queryset.filter(publication_year__gte=int(year_from))
-            except ValueError:
-                pass 
-                
-        if year_to:
-            try:
-                queryset = queryset.filter(publication_year__lte=int(year_to))
-            except ValueError:
-                pass
                 
         if title:
             queryset = queryset.filter(title__icontains=title)
-            
-        if author:
-            queryset = queryset.filter(author__icontains=author)
 
-        # Виправлений фільтр для зображень
         if image:
             if image.lower() in ['true', '1', 'yes']:
-                # Показати тільки книги З зображеннями
                 queryset = queryset.exclude(image__isnull=True).exclude(image='')
             elif image.lower() in ['false', '0', 'no']:
-                # Показати тільки книги БЕЗ зображень
                 queryset = queryset.filter(Q(image__isnull=True) | Q(image=''))
             
         if search:
             queryset = queryset.filter(
                 Q(title__icontains=search) | 
-                Q(author__icontains=search) |
                 Q(description__icontains=search)
             )
         
@@ -166,7 +123,7 @@ class BookListView(BookQuerysetMixin, ListAPIView):
         serializer = self.get_serializer(queryset, many=True)
     
         active_filters = {}
-        for param in ['genre', 'year_from', 'year_to', 'title', 'author', 'image', 'search']:
+        for param in ['genre', 'title', 'image', 'search']:
             value = request.query_params.get(param)
             if value:
                 active_filters[param] = value
@@ -181,6 +138,7 @@ class BookListView(BookQuerysetMixin, ListAPIView):
 
 
 class BookDetailView(BookQuerysetMixin, RetrieveAPIView):
+    permission_classes = [permissions.IsAuthenticated]
     serializer_class = BookSerializer
     
     def retrieve(self, request, *args, **kwargs):
@@ -242,7 +200,6 @@ class ScrapingLogQuerysetMixin:
 
 
 class ScrapingValidationMixin:
-    
     def check_running_scraping(self):
         return ScrapingLog.objects.filter(status='running').exists()
     
@@ -353,29 +310,11 @@ class BookSearchView(BookQuerysetMixin, ListAPIView):
         genre = self.request.query_params.get('genre')
         if genre:
             filters['genre__name__icontains'] = genre
-            
-        year_from = self.request.query_params.get('year_from')
-        if year_from:
-            try:
-                filters['publication_year__gte'] = int(year_from)
-            except ValueError:
-                pass
-                
-        year_to = self.request.query_params.get('year_to')
-        if year_to:
-            try:
-                filters['publication_year__lte'] = int(year_to)
-            except ValueError:
-                pass
                 
         title = self.request.query_params.get('title')
         if title:
             filters['title__icontains'] = title
             
-        author = self.request.query_params.get('author')
-        if author:
-            filters['author__icontains'] = author
-        
         if filters:
             queryset = queryset.filter(**filters)
     
@@ -383,7 +322,6 @@ class BookSearchView(BookQuerysetMixin, ListAPIView):
         if search:
             queryset = queryset.filter(
                 Q(title__icontains=search) | 
-                Q(author__icontains=search) |
                 Q(description__icontains=search) |
                 Q(genre__icontains=search)
             )
@@ -396,10 +334,7 @@ class BookSearchView(BookQuerysetMixin, ListAPIView):
         
         search_params = {
             'genre': request.query_params.get('genre'),
-            'year_from': request.query_params.get('year_from'),
-            'year_to': request.query_params.get('year_to'),
             'title': request.query_params.get('title'),
-            'author': request.query_params.get('author'),
             'search': request.query_params.get('search'),
         }
         
@@ -418,29 +353,13 @@ class BookStatsView(APIView):
         
         genres = Book.objects.values_list('genre', flat=True).distinct().order_by('genre')
         genres = [g for g in genres if g]  
-        years = Book.objects.values_list('publication_year', flat=True).distinct()
-        years = [y for y in years if y]  
-        min_year = min(years) if years else None
-        max_year = max(years) if years else None
-        
-        
-        top_authors = Book.objects.values('author').annotate(
-            book_count=Count('id')
-        ).order_by('-book_count')[:10]
         
         return Response({
             'total_books': total_books,
             'available_genres': list(genres),
-            'year_range': {
-                'min_year': min_year,
-                'max_year': max_year
-            },
-            'top_authors': list(top_authors),
             'filter_examples': {
                 'by_genre': '/book_list/?genre=фантастика',
-                'by_year_range': '/book_list/?year_from=2000&year_to=2023',
                 'by_title': '/book_list/?title=гаррі',
-                'by_author': '/book_list/?author=толкін',
                 'general_search': '/book_list/?search=магія',
                 'combined': '/book_list/?genre=фантастика&year_from=2010&search=дракон'
             }

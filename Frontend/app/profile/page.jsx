@@ -1,10 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { User, Edit3, Heart } from "lucide-react"
+import { useState } from "react"
+import { User, Edit3, Heart, Download } from "lucide-react"
 import toast from "react-hot-toast"
-import { useAppSelector } from "@/lib/hooks"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { useGetProfileQuery, useUpdateProfileMutation } from "@/lib/api/authApi"
 import { useGetFavoritesQuery } from "@/lib/api/booksApi"
 import BookCard from "@/components/book-card"
@@ -12,30 +12,9 @@ import Breadcrumb from "@/components/breadcrumb"
 
 export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false)
-  const { isAuthenticated, user } = useAppSelector((state) => state.auth)
+  const { data: profile } = useGetProfileQuery()
+  const { data: favorites } = useGetFavoritesQuery()
   const router = useRouter()
-  const { data: profile } = useGetProfileQuery(undefined, { skip: !isAuthenticated })
-  const { data: favorites } = useGetFavoritesQuery(undefined, { skip: !isAuthenticated })
-
-  // Перевірка авторизації
-  useEffect(() => {
-    if (!isAuthenticated) {
-      toast.error("Please sign in to access your profile")
-      router.push("/")
-    }
-  }, [isAuthenticated, router])
-
-  // Показуємо завантаження поки перевіряємо авторизацію
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-cream">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-brown-primary mx-auto mb-4"></div>
-          <p className="text-xl text-brown-secondary font-medium">Checking authentication...</p>
-        </div>
-      </div>
-    )
-  }
 
   if (isEditing) {
     return <EditProfileForm onCancel={() => setIsEditing(false)} />
@@ -60,24 +39,32 @@ export default function ProfilePage() {
                 <div>
                   <label className="block text-brown-secondary font-semibold mb-2">Username</label>
                   <div className="bg-gray-50 rounded-lg p-3 text-black font-medium">
-                    {profile?.username || user?.username || "Username"}
+                    {profile?.username || "Username"}
                   </div>
                 </div>
                 <div>
                   <label className="block text-brown-secondary font-semibold mb-2">Email</label>
-                  <div className="bg-gray-50 rounded-lg p-3 text-black font-medium">
-                    {profile?.email || user?.email || "Email"}
-                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3 text-black font-medium">{profile?.email || "Email"}</div>
                 </div>
               </div>
 
-              <button
-                onClick={() => setIsEditing(true)}
-                className="btn-primary text-white px-6 py-3 rounded-lg font-medium w-full flex items-center justify-center gap-2"
-              >
-                <Edit3 className="w-5 h-5" />
-                Edit profile
-              </button>
+              <div className="space-y-4">
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="btn-primary text-white px-6 py-3 rounded-lg font-medium w-full flex items-center justify-center gap-2"
+                >
+                  <Edit3 className="w-5 h-5" />
+                  Edit profile
+                </button>
+
+                <Link
+                  href="/profile/export"
+                  className="border-2 border-brown-secondary text-brown-secondary px-6 py-3 rounded-lg font-medium w-full flex items-center justify-center gap-2 hover:bg-brown-secondary hover:text-white transition-all duration-300"
+                >
+                  <Download className="w-5 h-5" />
+                  Export Books
+                </Link>
+              </div>
             </div>
           </div>
 
@@ -110,23 +97,13 @@ export default function ProfilePage() {
 }
 
 function EditProfileForm({ onCancel }) {
-  const { isAuthenticated, user } = useAppSelector((state) => state.auth)
-  const router = useRouter()
   const [updateProfile, { isLoading }] = useUpdateProfileMutation()
   const [formData, setFormData] = useState({
-    username: user?.username || "",
-    email: user?.email || "",
+    username: "",
+    email: "",
     currentPassword: "",
     newPassword: "",
   })
-
-  // Перевірка авторизації для форми редагування
-  useEffect(() => {
-    if (!isAuthenticated) {
-      toast.error("Please sign in to edit your profile")
-      router.push("/")
-    }
-  }, [isAuthenticated, router])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -138,17 +115,6 @@ function EditProfileForm({ onCancel }) {
       console.error("Profile update failed:", error)
       toast.error("Failed to update profile. Please try again.")
     }
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-cream">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-brown-primary mx-auto mb-4"></div>
-          <p className="text-xl text-brown-secondary font-medium">Checking authentication...</p>
-        </div>
-      </div>
-    )
   }
 
   return (

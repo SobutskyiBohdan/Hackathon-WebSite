@@ -41,9 +41,16 @@ export default function SignInModal({ isOpen, onClose }) {
       const result = await login(formData).unwrap()
       console.log("✅ Login successful:", result)
 
+      // Зберігаємо дані в Redux та cookies
       dispatch(setCredentials(result))
+
       toast.success("Signed in successfully!")
       onClose()
+
+      // Очищаємо форму
+      setFormData({ usernameOrEmail: "", password: "" })
+
+      // Перенаправляємо на головну сторінку
       router.push("/")
     } catch (error) {
       console.error("❌ Login failed:", error)
@@ -51,7 +58,7 @@ export default function SignInModal({ isOpen, onClose }) {
       // Детальна обробка помилок
       if (error?.status === "FETCH_ERROR") {
         console.error("🚨 FETCH_ERROR - Server connection failed")
-        toast.error("Connection failed! Please check if the Django server is running on http://localhost:8000")
+        toast.error("Connection failed! Please check if the Django server is running on http://127.0.0.1:8000")
       } else if (error?.status === 401) {
         toast.error("Invalid username/email or password")
       } else if (error?.status === 400) {

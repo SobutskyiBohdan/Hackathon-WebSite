@@ -5,6 +5,7 @@ import { Heart, Star, ShoppingCart, Eye } from "lucide-react"
 import { useAppSelector, useAppDispatch } from "@/lib/hooks"
 import { useAddToFavoritesMutation, useRemoveFromFavoritesMutation } from "@/lib/api/booksApi"
 import { addToFavorites, removeFromFavorites } from "@/lib/slices/favoritesSlice"
+import { toast } from "react-hot-toast"
 
 export default function BookCard({ book }) {
   const dispatch = useAppDispatch()
@@ -19,18 +20,35 @@ export default function BookCard({ book }) {
     e.preventDefault()
     e.stopPropagation()
 
-    if (!isAuthenticated) return
+    if (!isAuthenticated) {
+      toast.error("Please sign in to add favorites")
+      return
+    }
 
     try {
       if (isFavorite) {
+        console.log(`🗑️ Removing book ${book.id} from favorites...`)
         await removeFromFavoritesMutation(book.id).unwrap()
         dispatch(removeFromFavorites(book.id))
+        toast.success("Removed from favorites")
       } else {
+        console.log(`❤️ Adding book ${book.id} to favorites...`)
         await addToFavoritesMutation(book.id).unwrap()
         dispatch(addToFavorites(book.id))
+        toast.success("Added to favorites")
       }
     } catch (error) {
       console.error("Error updating favorites:", error)
+
+      // Optimistically update UI even if API fails
+      if (isFavorite) {
+        dispatch(removeFromFavorites(book.id))
+      } else {
+        dispatch(addToFavorites(book.id))
+      }
+
+      // Show a more user-friendly error message
+      toast.error("Could not update favorites on the server, but we've updated it locally")
     }
   }
 
