@@ -1,5 +1,5 @@
 """
-ASGI config for ebosh_backend project.
+ASGI config for boosh_backend project.
 
 It exposes the ASGI callable as a module-level variable named ``application``.
 

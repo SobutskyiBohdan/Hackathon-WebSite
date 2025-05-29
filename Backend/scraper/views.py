@@ -93,10 +93,14 @@ class BookQuerysetMixin:
         filters.OrderingFilter
     ]
     filterset_class = BookFilter
-    search_fields = ['title', 'author', 'description', 'genre']
+    search_fields = ['title', 'author', 'description', 'genre', 'image']
     ordering_fields = ['title', 'author', 'publication_year', 'created_at']
     ordering = ['-created_at']  
 
+
+from django.db.models import Q
+from rest_framework.generics import ListAPIView
+from rest_framework.response import Response
 
 class BookListView(BookQuerysetMixin, ListAPIView):
     serializer_class = BookListSerializer
@@ -110,6 +114,7 @@ class BookListView(BookQuerysetMixin, ListAPIView):
         title = self.request.query_params.get('title', None)
         author = self.request.query_params.get('author', None)
         search = self.request.query_params.get('search', None)
+        image = self.request.query_params.get('image', None)
 
         if genre:
             queryset = queryset.filter(genre__name__icontains=genre)
@@ -131,6 +136,15 @@ class BookListView(BookQuerysetMixin, ListAPIView):
             
         if author:
             queryset = queryset.filter(author__icontains=author)
+
+        # Виправлений фільтр для зображень
+        if image:
+            if image.lower() in ['true', '1', 'yes']:
+                # Показати тільки книги З зображеннями
+                queryset = queryset.exclude(image__isnull=True).exclude(image='')
+            elif image.lower() in ['false', '0', 'no']:
+                # Показати тільки книги БЕЗ зображень
+                queryset = queryset.filter(Q(image__isnull=True) | Q(image=''))
             
         if search:
             queryset = queryset.filter(
@@ -152,7 +166,7 @@ class BookListView(BookQuerysetMixin, ListAPIView):
         serializer = self.get_serializer(queryset, many=True)
     
         active_filters = {}
-        for param in ['genre', 'year_from', 'year_to', 'title', 'author', 'search']:
+        for param in ['genre', 'year_from', 'year_to', 'title', 'author', 'image', 'search']:
             value = request.query_params.get(param)
             if value:
                 active_filters[param] = value
@@ -168,6 +182,39 @@ class BookListView(BookQuerysetMixin, ListAPIView):
 
 class BookDetailView(BookQuerysetMixin, RetrieveAPIView):
     serializer_class = BookSerializer
+    
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            serializer = self.get_serializer(instance)
+            
+            response_data = serializer.data
+            
+            if instance.image:
+                response_data['image_metadata'] = {
+                    'has_image': True,
+                    'image_name': instance.image.name,
+                    'image_size': instance.image.size if hasattr(instance.image, 'size') else None,
+                }
+            else:
+                response_data['image_metadata'] = {
+                    'has_image': False,
+                    'image_name': None,
+                    'image_size': None,
+                }
+            
+            return Response(response_data)
+            
+        except Http404:
+            return Response(
+                {'detail': 'Book not found'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {'detail': f'Error retrieving book: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class BookCreateView(AdminRequiredMixin, BookQuerysetMixin, CreateAPIView):
