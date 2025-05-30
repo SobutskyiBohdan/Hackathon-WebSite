@@ -1,14 +1,23 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
+import { getAuthToken } from "../utils/cookies"
 
 export const booksApi = createApi({
   reducerPath: "booksApi",
   baseQuery: fetchBaseQuery({
     baseUrl: process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000",
     prepareHeaders: (headers, { getState }) => {
-      const token = getState().auth.token
+      // Спочатку пробуємо отримати токен з Redux
+      let token = getState().auth.token
+
+      // Якщо в Redux немає токена, пробуємо з cookies
+      if (!token) {
+        token = getAuthToken()
+      }
+
       if (token) {
         headers.set("authorization", `Bearer ${token}`)
       }
+
       headers.set("Content-Type", "application/json")
       headers.set("Accept", "application/json")
       return headers
@@ -84,30 +93,42 @@ export const booksApi = createApi({
       providesTags: ["Book"],
     }),
     getBookById: builder.query({
-      query: (id) => `/scraping/books/${id}/`,
+      query: (id) => `/scraping/book_detail/${id}/`,
       providesTags: (result, error, id) => [{ type: "Book", id }],
     }),
     getRecommendedBooks: builder.query({
-      query: (bookId) => `/scraping/books/${bookId}/recommended/`,
+      query: (bookId) => `/scraping/book_detail/${bookId}/recommended/`,
       providesTags: ["Book"],
     }),
     getFavorites: builder.query({
-      query: () => "/api/favorites/",
+      query: () => "/api/favorites/", // Update to match your actual backend endpoint
       providesTags: ["Favorites"],
+      transformErrorResponse: (response) => {
+        console.error("❌ Get Favorites API Error:", response)
+        return response
+      },
     }),
     addToFavorites: builder.mutation({
       query: (bookId) => ({
-        url: `/api/favorites/${bookId}/`,
+        url: `/api/favorites/add/${bookId}/`, // Update to match your actual backend endpoint
         method: "POST",
       }),
       invalidatesTags: ["Favorites"],
+      transformErrorResponse: (response) => {
+        console.error("❌ Add to Favorites API Error:", response)
+        return response
+      },
     }),
     removeFromFavorites: builder.mutation({
       query: (bookId) => ({
-        url: `/api/favorites/${bookId}/`,
+        url: `/api/favorites/remove/${bookId}/`, // Update to match your actual backend endpoint
         method: "DELETE",
       }),
       invalidatesTags: ["Favorites"],
+      transformErrorResponse: (response) => {
+        console.error("❌ Remove from Favorites API Error:", response)
+        return response
+      },
     }),
   }),
 })

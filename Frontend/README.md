@@ -36,7 +36,7 @@ cd Hackathon-WebSite
 ```
 2. **Install dependencies:**
 ```
-npm install
+npm install --force
 ```
 
 3. **Set up environment variables:**
@@ -46,7 +46,7 @@ cp .env.example .env.local
 
 Edit `.env.local` and set your backend API URL:
 ```env
-NEXT_PUBLIC_API_URL=http://127.0.0.1:8000/api
+NEXT_PUBLIC_API_URL=http://127.0.0.1:8000
 ```
 
 4. **Run in development mode:**
@@ -67,60 +67,25 @@ npm start
 The application expects the following API endpoints from your backend:
 
 ### Authentication
-- `POST /api/auth/login` - User login
-- `POST /api/auth/register` - User registration
-- `GET /api/auth/profile` - Get user profile
-- `PUT /api/auth/profile` - Update user profile
-- `POST /api/auth/reset-password` - Password reset
+- `POST /api/login` - User login
+- `POST /api/register` - User registration
+- `GET /api/profile` - Get user profile
+- `PUT /api/profile` - Update user profile
+- `POST /api/reset_password` - Password reset
 
 ### Books
-- `GET /api/books` - Get books list with search and filtering
-- `GET /api/books/:id` - Get book details
-- `GET /api/books/:id/recommended` - Get recommended books
+- `POST /scraping/book_create/` - Create book
+- `PATCH /scraping/book_update/:id` - Update book
+- `DELETE /scraping/book_delete/:id` - Delete book
+- `GET /scraping/book_list/` - Get books list with search and filtering
+- `GET /scraping/book_detail/` - Get book details
+- `GET /scraping/books/recommended/` - Get recommended books
 
 ### Favorites
 - `GET /api/favorites` - Get user's favorite books
 - `POST /api/favorites/:id` - Add book to favorites
 - `DELETE /api/favorites/:id` - Remove book from favorites
 
-## 📊 API Response Formats
-
-### Book Object
-```javascript
-{
-  id: "string",
-  title: "string",
-  author: "string",
-  year: "string",
-  price: "string",
-  image: "string",
-  description: "string", // optional
-  rating: "number", // optional
-  inStock: "number" // optional
-}
-```
-
-### Books List Response
-```javascript
-{
-  books: [Book],
-  total: "number",
-  page: "number",
-  limit: "number"
-}
-```
-
-### Authentication Response
-```javascript
-{
-  user: {
-    id: "string",
-    username: "string",
-    email: "string"
-  },
-  token: "string"
-}
-```
 
 ## 🏗 Project Structure
 

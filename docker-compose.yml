@@ -1,0 +1,101 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    container_name: hackathon_db
+    environment:
+      POSTGRES_DB: hackathon_db
+      POSTGRES_USER: hackathon_user
+      POSTGRES_PASSWORD: hackathon_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - hackathon_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: hackathon_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=1
+      - DATABASE_URL=postgresql://hackathon_user:hackathon_pass@db:5432/hackathon_db
+      - EMAIL_HOST=mailhog
+      - EMAIL_PORT=1025
+      - EMAIL_HOST_USER=
+      - EMAIL_HOST_PASSWORD=
+      - EMAIL_USE_TLS=False
+      - EMAIL_USE_SSL=False
+    depends_on:
+      - db
+      - mailhog
+    volumes:
+      - ./backend:/app
+    networks:
+      - hackathon_network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - NPM_CONFIG_LEGACY_PEER_DEPS=true
+    container_name: hackathon_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:8000
+      - NODE_ENV=production
+      - NPM_CONFIG_LEGACY_PEER_DEPS=true
+    depends_on:
+      - backend
+    networks:
+      - hackathon_network
+
+  nginx:
+    image: nginx:alpine
+    container_name: hackathon_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl  # для SSL сертифікатів якщо потрібно
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - hackathon_network
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: hackathon_mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"  # SMTP port
+      - "8025:8025"  # Web UI port
+    environment:
+      - MH_STORAGE=maildir
+      - MH_MAILDIR_PATH=/maildir
+      - MH_UI_BIND_ADDR=0.0.0.0:8025
+      - MH_API_BIND_ADDR=0.0.0.0:8025
+      - MH_SMTP_BIND_ADDR=0.0.0.0:1025
+    volumes:
+      - mailhog_data:/maildir
+    networks:
+      - hackathon_network
+
+volumes:
+  postgres_data:
+    driver: local
+  mailhog_data:
+    driver: local
+
+networks:
+  hackathon_network:
+    driver: bridge

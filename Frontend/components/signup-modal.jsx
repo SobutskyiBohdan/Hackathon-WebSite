@@ -45,9 +45,17 @@ export default function SignUpModal({ isOpen, onClose }) {
 
     try {
       const result = await register(formData).unwrap()
+
+      // Зберігаємо дані в Redux та cookies
       dispatch(setCredentials(result))
+
       toast.success("Account created successfully!")
       onClose()
+
+      // Очищаємо форму
+      setFormData({ username: "", email: "", password: "" })
+
+      // Перенаправляємо на головну сторінку
       router.push("/")
     } catch (error) {
       console.error("❌ Registration failed:", error)

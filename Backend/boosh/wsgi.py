@@ -1,9 +1,9 @@
 """
-<<<<<<< HEAD
+
 WSGI config for boosh_backend project.
 =======
 WSGI config for book-shelf project.
->>>>>>> 9e995e8b415d1f03c7c200a5d070b51318fa6822
+
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 
