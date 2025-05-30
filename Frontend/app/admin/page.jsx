@@ -7,6 +7,7 @@ import { Plus, Edit, Trash2, Users, BookOpen } from "lucide-react"
 import { useAppSelector } from "@/lib/hooks"
 import { useGetBooksQuery } from "@/lib/api/booksApi"
 import Breadcrumb from "@/components/breadcrumb"
+import Pagination from "@/components/pagination"
 
 export default function AdminPage() {
   const { user, isAuthenticated } = useAppSelector((state) => state.auth)
@@ -193,3 +194,11 @@ export default function AdminPage() {
     </div>
   )
 }
+
+{booksData?.results && (
+  <Pagination 
+    currentPage={currentPage}
+    totalPages={Math.ceil(booksData.count / 10)}
+    onPageChange={setCurrentPage}
+  />
+)}

@@ -129,13 +129,13 @@ export default function SignInModal({ isOpen, onClose }) {
           />
         </div>
         <div className="text-center">
-          <Link href="/reset-password" className="text-brown-secondary hover:text-brown-primary btn-secondary">
+          <Link href="/reset_password" className="text-brown-secondary hover:text-brown-primary btn-secondary">
             Forgot your password?
           </Link>
         </div>
 
         {/* Debug section - тільки в режимі розробки */}
-        {process.env.NODE_ENV === "development" && (
+        {/* {process.env.NODE_ENV === "development" && (
           <div className="bg-gray-50 rounded-lg p-4 text-sm">
             <p className="text-gray-600 mb-2">🔧 Debug Info:</p>
             <p className="text-gray-600">API URL: {process.env.NEXT_PUBLIC_API_URL}</p>
@@ -144,7 +144,7 @@ export default function SignInModal({ isOpen, onClose }) {
               Test Connection
             </button>
           </div>
-        )}
+        )} */}
 
         <div className="text-center">
           <button

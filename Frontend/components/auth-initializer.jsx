@@ -1,37 +1,44 @@
 "use client"
 
 import { useEffect } from "react"
-import { useAppDispatch, useAppSelector } from "@/lib/hooks"
-import { initializeAuth } from "@/lib/slices/authSlice"
-import { getAuthToken, getUserData } from "@/lib/utils/cookies"
+import { useDispatch } from "react-redux"
+import { setAuth } from "@/lib/slices/authSlice"
+import { getCookie } from "@/lib/utils/cookies"
 
-export default function AuthInitializer({ children }) {
-  const dispatch = useAppDispatch()
-  const { isAuthenticated, user } = useAppSelector((state) => state.auth)
+const AuthInitializer = () => {
+  const dispatch = useDispatch()
 
   useEffect(() => {
-    const initAuth = () => {
-      const token = getAuthToken()
-      const userData = getUserData()
+    // Функція для ініціалізації стану авторизації
+    const initializeAuth = () => {
+      try {
+        // Спочатку перевіряємо localStorage
+        const token = localStorage.getItem("token") || getCookie("token")
+        const userStr = localStorage.getItem("user")
 
-      console.log("🔍 Auth data from storage:", {
-        hasToken: !!token,
-        hasUserData: !!userData,
-      })
-
-      dispatch(initializeAuth())
-      console.log("🔄 Auth initialized from Redux")
+        if (token && userStr) {
+          try {
+            const user = JSON.parse(userStr)
+            dispatch(setAuth({ token, user }))
+            console.log("Auth initialized from localStorage/cookies")
+          } catch (e) {
+            console.error("Error parsing user from localStorage:", e)
+          }
+        }
+      } catch (error) {
+        console.error("Error initializing auth:", error)
+      }
     }
 
-    initAuth()
+    // Невелика затримка для правильної ініціалізації
+    const timer = setTimeout(() => {
+      initializeAuth()
+    }, 100)
+
+    return () => clearTimeout(timer)
   }, [dispatch])
 
-  useEffect(() => {
-    console.log("🔐 Auth state:", {
-      isAuthenticated,
-      user: user?.username || null,
-    })
-  }, [isAuthenticated, user])
-
-  return children
+  return null
 }
+
+export default AuthInitializer

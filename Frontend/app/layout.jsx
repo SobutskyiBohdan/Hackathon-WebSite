@@ -6,6 +6,7 @@ import Header from "@/components/header"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'),
   title: "Book Shelf - Your Personal Library",
   description: "Discover, collect, and manage your favorite books",
   icons: {
@@ -26,8 +27,6 @@ export const metadata = {
     shortcut: "/favicon.ico",
   },
   manifest: "/manifest.json",
-  themeColor: "#4b2e2b",
-  viewport: "width=device-width, initial-scale=1",
   openGraph: {
     title: "Book Shelf - Your Personal Library",
     description: "Discover, collect, and manage your favorite books",
@@ -52,6 +51,13 @@ export const metadata = {
   },
 }
 
+// Окремий експорт для viewport (новий спосіб Next.js 14+)
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#4b2e2b",
+}
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
@@ -61,7 +67,7 @@ export default function RootLayout({ children }) {
         <link rel="icon" type="image/png" sizes="16x16" href="/favicon.ico" />
         <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#4b2e2b" />
+        {/* Видаляємо дублікат meta theme-color, бо тепер він в viewport */}
       </head>
       <body className={inter.className}>
         <Providers>

@@ -1,7 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit"
-import { getAuthToken, getUserData, clearAuthData } from "@/lib/utils/cookies"
+import { setAuthToken, getAuthToken, setUserData, getUserData, clearAuthData } from "@/lib/utils/cookies"
 
-// Update the getInitialState function to be more robust - БЕЗ REFRESH TOKEN
+// Отримання початкового стану
 const getInitialState = () => {
   // Server-side rendering check
   if (typeof window === "undefined") {
@@ -9,6 +9,7 @@ const getInitialState = () => {
       user: null,
       token: null,
       isAuthenticated: false,
+      isInitialized: false,
     }
   }
 
@@ -16,7 +17,7 @@ const getInitialState = () => {
     const token = getAuthToken()
     const user = getUserData()
 
-    console.log("🔄 Initial auth state from cookies:", {
+    console.log("🔄 Initial auth state from storage:", {
       hasToken: !!token,
       hasUser: !!user,
       user: user ? user.username : null,
@@ -26,15 +27,16 @@ const getInitialState = () => {
       user: user,
       token: token,
       isAuthenticated: !!(token && user),
+      isInitialized: false, // Буде встановлено в true після ініціалізації
     }
   } catch (error) {
-    console.error("❌ Error initializing auth state from cookies:", error)
-    // Clear potentially corrupted cookies
+    console.error("❌ Error initializing auth state from storage:", error)
     clearAuthData()
     return {
       user: null,
       token: null,
       isAuthenticated: false,
+      isInitialized: false,
     }
   }
 }
@@ -43,63 +45,118 @@ const authSlice = createSlice({
   name: "auth",
   initialState: getInitialState(),
   reducers: {
-    // Update the setCredentials reducer - БЕЗ REFRESH TOKEN
     setCredentials: (state, action) => {
-      const { user, token } = action.payload
+      console.log("🔧 setCredentials called with payload:", action.payload)
+      
+      const { user, access, token, access_token } = action.payload
+      
+      // Використовуємо access, access_token або token (залежно від того, що приходить з API)
+      const authToken = access || access_token || token
+
+      if (!authToken) {
+        console.error("❌ No auth token found in payload:", action.payload)
+        return
+      }
+
+      console.log("🔧 Setting credentials:", {
+        user: user,
+        tokenLength: authToken?.length,
+        hasUser: !!user
+      })
 
       state.user = user
-      state.token = token
+      state.token = authToken
       state.isAuthenticated = true
+      state.isInitialized = true
 
-      // Ensure we have valid data before saving to cookies
-      if (token) {
-        setAuthToken(token)
-        console.log("✅ Auth token saved to cookies")
-      }
-
+      // Зберігаємо в cookies та localStorage
+      setAuthToken(authToken)
       if (user) {
         setUserData(user)
-        console.log("✅ User data saved to cookies:", user.username)
       }
 
-      console.log("✅ Auth state updated in Redux")
+      console.log("✅ Auth credentials set:", {
+        username: user?.username || user?.email,
+        hasToken: !!authToken,
+        tokenLength: authToken?.length,
+        isAuthenticated: state.isAuthenticated
+      })
     },
     updateUser: (state, action) => {
-      state.user = { ...state.user, ...action.payload }
-
-      // Оновлюємо cookies
-      if (state.user) setUserData(state.user)
+      if (state.user) {
+        state.user = { ...state.user, ...action.payload }
+        setUserData(state.user)
+        console.log("✅ User data updated:", action.payload)
+      }
     },
     logout: (state) => {
       state.user = null
       state.token = null
       state.isAuthenticated = false
+      state.isInitialized = true
 
-      // Очищаємо cookies
       clearAuthData()
-
-      console.log("🚪 User logged out, cookies cleared")
+      console.log("🚪 User logged out")
     },
-    // Дія для ініціалізації стану з cookies - БЕЗ REFRESH TOKEN
     initializeAuth: (state) => {
-      const token = getAuthToken()
-      const user = getUserData()
+      if (typeof window === "undefined") {
+        state.isInitialized = true
+        return
+      }
 
-      if (token && user) {
-        state.user = user
-        state.token = token
-        state.isAuthenticated = true
-        console.log("🔄 Auth state initialized from cookies:", { user: user?.username })
-      } else {
-        // Якщо даних немає або вони неповні, очищаємо все
+      try {
+        const token = getAuthToken()
+        const user = getUserData()
+
+        console.log("🔄 Initializing auth state:", {
+          hasToken: !!token,
+          hasUser: !!user,
+          tokenLength: token?.length,
+          user: user?.username || user?.email,
+        })
+
+        if (token && user) {
+          state.user = user
+          state.token = token
+          state.isAuthenticated = true
+          console.log("✅ Auth state initialized from storage")
+        } else {
+          state.user = null
+          state.token = null
+          state.isAuthenticated = false
+          clearAuthData()
+          console.log("🔄 Auth state cleared - incomplete data")
+        }
+      } catch (error) {
+        console.error("❌ Error during auth initialization:", error)
         state.user = null
         state.token = null
         state.isAuthenticated = false
         clearAuthData()
+      } finally {
+        state.isInitialized = true
       }
+    },
+    // Новий action для очистки помилок токена
+    clearAuthErrors: (state) => {
+      console.log("🧹 Auth errors cleared")
     },
   },
 })
 
-export const { setCredentials, updateUser, logout, initializeAuth } = authSlice.actions
+export const { 
+  setCredentials, 
+  updateUser, 
+  logout, 
+  initializeAuth, 
+  clearAuthErrors 
+} = authSlice.actions
+
 export default authSlice.reducer
+
+// Селектори
+export const selectAuth = (state) => state.auth
+export const selectIsAuthenticated = (state) => state.auth.isAuthenticated
+export const selectUser = (state) => state.auth.user
+export const selectToken = (state) => state.auth.token
+export const selectIsInitialized = (state) => state.auth.isInitialized

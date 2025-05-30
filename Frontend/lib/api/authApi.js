@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
-import { getAuthToken } from "../utils/cookies"
+import { getAuthToken } from "@/lib/utils/cookies"
 
 // Debug function
 const debugRequest = (url, options) => {
@@ -18,32 +18,28 @@ export const authApi = createApi({
       // Спочатку пробуємо отримати токен з Redux
       let token = getState().auth.token
 
-      // Якщо в Redux немає токена, пробуємо з cookies
+      // Якщо в Redux немає токена, пробуємо з cookies/localStorage
       if (!token) {
         token = getAuthToken()
       }
 
       if (token) {
         headers.set("authorization", `Bearer ${token}`)
-        console.log("🔑 Using auth token from:", getState().auth.token ? "Redux" : "Cookies")
+        console.log("🔑 Using auth token from:", getState().auth.token ? "Redux" : "storage")
       }
 
       headers.set("Content-Type", "application/json")
       headers.set("Accept", "application/json")
       return headers
     },
-    // Додаємо mode для CORS
     mode: "cors",
-    // ВАЖЛИВО: credentials для автоматичної роботи з кукі
     credentials: "include",
-    // Додаємо timeout
     timeout: 15000,
   }),
   tagTypes: ["User"],
   endpoints: (builder) => ({
     login: builder.mutation({
       query: (credentials) => {
-        // ВИПРАВЛЕННЯ: Трансформуємо usernameOrEmail в username
         const transformedCredentials = {
           username: credentials.usernameOrEmail || credentials.username,
           password: credentials.password,
@@ -55,7 +51,6 @@ export const authApi = createApi({
           body: transformedCredentials,
         }
 
-        // Debug в режимі розробки
         if (process.env.NODE_ENV === "development") {
           console.log("🔧 Original credentials:", credentials)
           console.log("🔧 Transformed credentials:", transformedCredentials)
@@ -73,7 +68,6 @@ export const authApi = createApi({
         console.error("🚨 Request data that failed:", arg)
         return response
       },
-      // Додаємо invalidatesTags для оновлення кешу після логіну
       invalidatesTags: ["User"],
     }),
     register: builder.mutation({
@@ -84,7 +78,6 @@ export const authApi = createApi({
           body: userData,
         }
 
-        // Debug в режимі розробки
         if (process.env.NODE_ENV === "development") {
           debugRequest(`${process.env.NEXT_PUBLIC_API_URL}/api/register/`, requestConfig)
         }
@@ -93,6 +86,7 @@ export const authApi = createApi({
       },
       transformResponse: (response) => {
         console.log("📝 Register response:", response)
+        // Важливо: після успішної реєстрації користувач автоматично авторизований
         return response
       },
       transformErrorResponse: (response, meta, arg) => {
@@ -100,8 +94,9 @@ export const authApi = createApi({
         console.error("🚨 Meta:", meta)
         return response
       },
+      // Після успішної реєстрації оновлюємо дані користувача
+      invalidatesTags: ["User"],
     }),
-    // Додаємо logout endpoint
     logout: builder.mutation({
       query: () => ({
         url: "/api/logout/",
@@ -119,8 +114,14 @@ export const authApi = createApi({
         console.log("👤 Profile response:", response)
         return response
       },
+      transformErrorResponse: (response, meta, arg) => {
+        console.error("🚨 Profile API Error:", response)
+        if (response.status === 401) {
+          console.log("🚨 Profile fetch failed - token might be invalid")
+        }
+        return response
+      },
       providesTags: ["User"],
-      // Автоматично рефетчимо профіль якщо токен змінився
       forceRefetch({ currentArg, previousArg }) {
         return currentArg !== previousArg
       },
@@ -139,7 +140,7 @@ export const authApi = createApi({
     }),
     resetPassword: builder.mutation({
       query: (data) => ({
-        url: "/api/reset-password/",
+        url: "/api/resetpassword/",
         method: "POST",
         body: data,
       }),
@@ -148,11 +149,14 @@ export const authApi = createApi({
         return response
       },
     }),
-    // Додаємо endpoint для перевірки валідності токена
     verifyToken: builder.query({
       query: () => "/api/verify-token/",
       transformResponse: (response) => {
         console.log("✅ Token verification response:", response)
+        return response
+      },
+      transformErrorResponse: (response, meta, arg) => {
+        console.error("🚨 Token verification failed:", response)
         return response
       },
       providesTags: ["User"],
