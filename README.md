@@ -19,7 +19,7 @@
 
 1. **Клонування репозиторію:**
     ```bash
-    git clone <repository-url>
+    git clone https://github.com/SobutskyiBohdan/Hackathon-WebSite
     cd Hackathon-WebSite
     ```
 
@@ -63,7 +63,7 @@ docker-compose.yml  # Docker Compose конфіг
 | Web        | http://localhost              |
 | Backend    | http://localhost:8000         |
 | Frontend   | http://localhost:3000         |
-| Database   | localhost:5432                |
+| Database   | http://localhost:5432         |
 | MailHog    | http://localhost:8025         |
 
 ---
