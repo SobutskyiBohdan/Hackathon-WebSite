@@ -1,3 +1,5 @@
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 from rest_framework import status, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -15,6 +17,39 @@ User = get_user_model()
 
 class RegisterView(APIView):
     res = ""
+    @swagger_auto_schema(
+        operation_description="User register",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['username', 'email', 'password'],
+            properties={
+                'username': openapi.Schema(type=openapi.TYPE_STRING, description='Username'),
+                'email': openapi.Schema(type=openapi.TYPE_STRING, description='Email'),
+                'password': openapi.Schema(type=openapi.TYPE_STRING, description='Password'),
+            },
+        ),
+        responses={
+            200: openapi.Response(
+                description="Success",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'user': openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'username': openapi.Schema(type=openapi.TYPE_STRING),
+                                'email': openapi.Schema(type=openapi.TYPE_STRING),
+                                'is_staff': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                            }
+                        ),
+                    }
+                )
+            ),
+            400: openapi.Response(description="Bad request"),
+            401: openapi.Response(description="Invalid credentials"),
+        }
+    )
     def post(self, request):
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
@@ -27,10 +62,44 @@ class RegisterView(APIView):
 
 
 class LoginView(APIView):
+    @swagger_auto_schema(
+        operation_description="User login",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['username', 'password'],
+            properties={
+                'username': openapi.Schema(type=openapi.TYPE_STRING, description='Username or email'),
+                'password': openapi.Schema(type=openapi.TYPE_STRING, description='Password'),
+            },
+        ),
+        responses={
+            200: openapi.Response(
+                description="Success",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'refresh': openapi.Schema(type=openapi.TYPE_STRING),
+                        'access': openapi.Schema(type=openapi.TYPE_STRING),
+                        'user': openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'username': openapi.Schema(type=openapi.TYPE_STRING),
+                                'email': openapi.Schema(type=openapi.TYPE_STRING),
+                                'is_staff': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                            }
+                        ),
+                    }
+                )
+            ),
+            400: openapi.Response(description="Bad request"),
+            401: openapi.Response(description="Invalid credentials"),
+        }
+    )
     def post(self, request):
         usernameOrEmail = request.data.get('username') or request.data.get('email')
         password = request.data.get('password')
-
+        
         if usernameOrEmail and password:
             user = authenticate(username=usernameOrEmail, password=password)
 
@@ -40,7 +109,7 @@ class LoginView(APIView):
                     user = authenticate(username=user_by_email.username, password=password)
                 except User.DoesNotExist:
                     user = None
-
+            
             if user:
                 refresh = RefreshToken.for_user(user)
                 return Response({
@@ -65,53 +134,30 @@ class LoginView(APIView):
 
 class UserDetailView(APIView):
     permission_classes = [permissions.IsAuthenticated]
+    @swagger_auto_schema(
+        operation_description="Отримати інформацію про поточного авторизованого користувача",
+        operation_summary="Деталі користувача",
+        tags=['User'],
+        responses={
+            200: openapi.Response(
+                description="Інформація про користувача",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID користувача'),
+                        'username': openapi.Schema(type=openapi.TYPE_STRING, description="Ім'я користувача"),
+                        'email': openapi.Schema(type=openapi.TYPE_STRING, description='Email користувача'),
+                        'first_name': openapi.Schema(type=openapi.TYPE_STRING, description="Ім'я"),
+                        'last_name': openapi.Schema(type=openapi.TYPE_STRING, description='Прізвище'),
+                        'is_staff': openapi.Schema(type=openapi.TYPE_BOOLEAN, description='Чи є адміністратором'),
+                        'date_joined': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATETIME, description='Дата реєстрації'),
+                    }
+                )
+            ),
+            401: openapi.Response(description="Не авторизований - потрібен валідний токен"),
+        }
+    )
     
     def get(self, request):
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
-
-
-class PasswordResetRequestView(APIView):
-    def post(self, request):
-        email = request.data.get('email')
-        if not email:
-            return Response({'error': 'Email is required'}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            return Response({'error': 'User with this email does not exist'}, status=status.HTTP_404_NOT_FOUND)
-
-        token = default_token_generator.make_token(user)
-        uid = urlsafe_base64_encode(force_bytes(user.pk))
-        reset_link = f"http://localhost:3000/reset_password/{uid}/{token}"
-
-        send_mail(
-            subject='Password Reset',
-            message=f'Click the link to reset your password: {reset_link}',
-            from_email=None,  
-            recipient_list=[email],
-            fail_silently=False,
-        )
-
-        return Response({'message': 'Password reset link sent'}, status=status.HTTP_200_OK)
-
-
-class PasswordResetConfirmView(APIView):
-    def post(self, request, uidb64, token):
-        password = request.data.get('password')
-        if not password:
-            return Response({'error': 'Password is required'}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            uid = urlsafe_base64_decode(uidb64).decode()
-            user = User.objects.get(pk=uid)
-        except (User.DoesNotExist, ValueError, TypeError):
-            return Response({'error': 'Invalid UID'}, status=status.HTTP_400_BAD_REQUEST)
-
-        if default_token_generator.check_token(user, token):
-            user.set_password(password)
-            user.save()
-            return Response({'message': 'Password has been reset'}, status=status.HTTP_200_OK)
-        else:
-            return Response({'error': 'Invalid or expired token'}, status=status.HTTP_400_BAD_REQUEST)

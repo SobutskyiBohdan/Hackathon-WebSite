@@ -255,8 +255,56 @@ class StartScrapingView(AdminRequiredMixin, ScrapingValidationMixin, CreateAPIVi
             scraping_log.save()
 
 
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.utils import timezone
+
 class ScrapingStatusView(AdminRequiredMixin, ScrapingLogQuerysetMixin, APIView):
     
+    @swagger_auto_schema(
+        operation_description="Get scraping status. If ID is specified, returns specific status, otherwise, returns last 10 records",
+        operation_summary="Scraping status",
+        tags=['Scraping'],
+        manual_parameters=[
+            openapi.Parameter(
+                'scraping_id', 
+                openapi.IN_QUERY, 
+                description="ID of a specific scraping (optional)", 
+                type=openapi.TYPE_INTEGER,
+                required=False
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Scraping status",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID скрапінгу'),
+                        'status': openapi.Schema(type=openapi.TYPE_STRING, description='Статус (running, completed, failed, interrupted)'),
+                        'started_at': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATETIME, description='Час початку'),
+                        'finished_at': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATETIME, description='Час завершення'),
+                        'total_products': openapi.Schema(type=openapi.TYPE_INTEGER, description='Загальна кількість товарів'),
+                        'processed_products': openapi.Schema(type=openapi.TYPE_INTEGER, description='Оброблено товарів'),
+                        'error_message': openapi.Schema(type=openapi.TYPE_STRING, description='Повідомлення про помилку'),
+                    }
+                )
+            ),
+            404: openapi.Response(
+                description="Scraping was not found",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'error': openapi.Schema(type=openapi.TYPE_STRING, example='Scraping log not found')
+                    }
+                )
+            ),
+            403: openapi.Response(description="Access denied - administrator rights required"),
+        }
+    )
     def get(self, request, scraping_id=None, *args, **kwargs):
         if scraping_id:
             return self._get_specific_status(scraping_id)
@@ -282,6 +330,32 @@ class ScrapingStatusView(AdminRequiredMixin, ScrapingLogQuerysetMixin, APIView):
 
 class StopScrapingView(AdminRequiredMixin, ScrapingValidationMixin, APIView):
     
+    @swagger_auto_schema(
+        operation_description="Stop all active scraping processes. Changes the status to 'interrupted' and sets the end time",
+        operation_summary="Stop scraping",
+        tags=['Scraping'],
+        responses={
+            200: openapi.Response(
+                description="Scraping was stopped",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'message': openapi.Schema(type=openapi.TYPE_STRING, example='Scraping was stopped')
+                    }
+                )
+            ),
+            404: openapi.Response(
+                description="No active scraping",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'error': openapi.Schema(type=openapi.TYPE_STRING, example='No active scraping')
+                    }
+                )
+            ),
+            403: openapi.Response(description="Access denied - administrator rights required"),
+        }
+    )
     def post(self, request, *args, **kwargs):
         running_logs = self.get_running_scraping_logs()
         

@@ -210,3 +210,11 @@ export default function AdminPage() {
     </div>
   )
 }
+
+{booksData?.results && (
+  <Pagination 
+    currentPage={currentPage}
+    totalPages={Math.ceil(booksData.count / 10)}
+    onPageChange={setCurrentPage}
+  />
+)}
