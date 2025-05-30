@@ -27,34 +27,40 @@ class RegisterView(APIView):
 
 
 class LoginView(APIView):
-   def post(self, request):
-       usernameOrEmail = request.data.get('username') or request.data.get('email')
-       password = request.data.get('password')
-       
-       if usernameOrEmail and password:
-           user = authenticate(username=usernameOrEmail, password=password)
+    def post(self, request):
+        usernameOrEmail = request.data.get('username') or request.data.get('email')
+        password = request.data.get('password')
 
-           if not user:
-               try:
-                   user_by_email = User.objects.get(email=usernameOrEmail)
-                   user = authenticate(username=user_by_email.username, password=password)
-               except User.DoesNotExist:
-                   user = None
-           
-           if user:
-               refresh = RefreshToken.for_user(user)
-               return Response({
-                   'refresh': str(refresh),
-                   'access': str(refresh.access_token),
-               }, status=status.HTTP_200_OK)
-           else:
-               return Response({
-                   'error': 'Invalid credentials'
-               }, status=status.HTTP_401_UNAUTHORIZED)
-       else:
-           return Response({
-               'error': 'Username/email and password required'
-           }, status=status.HTTP_400_BAD_REQUEST)
+        if usernameOrEmail and password:
+            user = authenticate(username=usernameOrEmail, password=password)
+
+            if not user:
+                try:
+                    user_by_email = User.objects.get(email=usernameOrEmail)
+                    user = authenticate(username=user_by_email.username, password=password)
+                except User.DoesNotExist:
+                    user = None
+
+            if user:
+                refresh = RefreshToken.for_user(user)
+                return Response({
+                    'refresh': str(refresh),
+                    'access': str(refresh.access_token),
+                    'user': {
+                        'id': user.id,
+                        'username': user.username,
+                        'email': user.email,
+                        'is_staff': user.is_staff,
+                    }
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'error': 'Invalid credentials'
+                }, status=status.HTTP_401_UNAUTHORIZED)
+        else:
+            return Response({
+                'error': 'Username/email and password required'
+            }, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserDetailView(APIView):

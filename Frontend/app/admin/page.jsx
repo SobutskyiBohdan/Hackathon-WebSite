@@ -40,6 +40,9 @@ export default function AdminPage() {
     )
   }
 
+  // Розрахунок загальної кількості сторінок
+  const totalPages = Math.ceil((booksData?.total || 0) / 10)
+
   return (
     <div className="px-6 py-12">
       <div className="max-w-7xl mx-auto">
@@ -130,51 +133,64 @@ export default function AdminPage() {
               <p className="mt-4 text-brown-secondary">Loading books...</p>
             </div>
           ) : booksData?.books && booksData.books.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-4 px-4 font-semibold text-brown-secondary">Title</th>
-                    <th className="text-left py-4 px-4 font-semibold text-brown-secondary">Year</th>
-                    <th className="text-left py-4 px-4 font-semibold text-brown-secondary">Price</th>
-                    <th className="text-left py-4 px-4 font-semibold text-brown-secondary">Stock</th>
-                    <th className="text-left py-4 px-4 font-semibold text-brown-secondary">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {booksData.books.map((book) => (
-                    <tr key={book.id} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="py-4 px-4">
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={book.image || "/placeholder.svg?height=50&width=40"}
-                            alt={book.title}
-                            className="w-10 h-12 object-cover rounded"
-                          />
-                          <span className="font-medium text-black">{book.title}</span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-4 text-brown-secondary">{book.year}</td>
-                      <td className="py-4 px-4 text-black font-medium">{book.price}</td>
-                      <td className="py-4 px-4 text-brown-secondary">{book.inStock}</td>
-                      <td className="py-4 px-4">
-                        <div className="flex items-center gap-2">
-                          <Link
-                            href={`/admin/books/${book.id}/edit`}
-                            className="p-2 text-brown-secondary hover:text-brown-primary transition-colors"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Link>
-                          <button className="p-2 text-red-500 hover:text-red-700 transition-colors">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="text-left py-4 px-4 font-semibold text-brown-secondary">Title</th>
+                      <th className="text-left py-4 px-4 font-semibold text-brown-secondary">Year</th>
+                      <th className="text-left py-4 px-4 font-semibold text-brown-secondary">Price</th>
+                      <th className="text-left py-4 px-4 font-semibold text-brown-secondary">Stock</th>
+                      <th className="text-left py-4 px-4 font-semibold text-brown-secondary">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {booksData.books.map((book) => (
+                      <tr key={book.id} className="border-b border-gray-100 hover:bg-gray-50">
+                        <td className="py-4 px-4">
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={book.image || "/placeholder.svg?height=50&width=40"}
+                              alt={book.title}
+                              className="w-10 h-12 object-cover rounded"
+                            />
+                            <span className="font-medium text-black">{book.title}</span>
+                          </div>
+                        </td>
+                        <td className="py-4 px-4 text-brown-secondary">{book.year}</td>
+                        <td className="py-4 px-4 text-black font-medium">{book.price}</td>
+                        <td className="py-4 px-4 text-brown-secondary">{book.inStock}</td>
+                        <td className="py-4 px-4">
+                          <div className="flex items-center gap-2">
+                            <Link
+                              href={`/admin/books/${book.id}/edit`}
+                              className="p-2 text-brown-secondary hover:text-brown-primary transition-colors"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Link>
+                            <button className="p-2 text-red-500 hover:text-red-700 transition-colors">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Додана пагінація всередині умови */}
+              {totalPages > 1 && (
+                <div className="mt-8">
+                  <Pagination 
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                  />
+                </div>
+              )}
+            </>
           ) : (
             <div className="text-center py-12">
               <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -194,11 +210,3 @@ export default function AdminPage() {
     </div>
   )
 }
-
-{booksData?.results && (
-  <Pagination 
-    currentPage={currentPage}
-    totalPages={Math.ceil(booksData.count / 10)}
-    onPageChange={setCurrentPage}
-  />
-)}

@@ -1,9 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { ChevronLeft, ChevronRight, Search, Filter } from "lucide-react"
+import { Search, Filter } from "lucide-react"
 import { useGetBooksQuery } from "@/lib/api/booksApi"
 import BookCard from "@/components/book-card"
+import Pagination from "@/components/pagination"
 
 export default function HomePage() {
   const [searchParams, setSearchParams] = useState({
@@ -37,6 +38,9 @@ export default function HomePage() {
       limit: 12,
     })
   }
+
+  // Розрахунок загальної кількості сторінок
+  const totalPages = Math.ceil((data?.total || 0) / searchParams.limit)
 
   if (isLoading)
     return (
@@ -237,56 +241,12 @@ export default function HomePage() {
                 ))}
               </div>
 
-              {/* Pagination */}
-              <div className="flex items-center justify-center gap-8 animate-fade-in">
-                <button
-                  onClick={() => handlePageChange(searchParams.page - 1)}
-                  disabled={searchParams.page <= 1}
-                  className="flex items-center gap-2 p-4 rounded-full bg-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-xl transition-all duration-300 group"
-                >
-                  <ChevronLeft className="w-6 h-6 text-brown-secondary group-hover:text-brown-primary" />
-                  <span className="text-brown-secondary group-hover:text-brown-primary font-medium">Previous</span>
-                </button>
-
-                <div className="flex items-center gap-4">
-                  <span className="text-brown-secondary font-medium">Page</span>
-                  <div className="flex items-center gap-2">
-                    {/* Page numbers */}
-                    {Array.from({ length: Math.min(5, Math.ceil((data?.total || 0) / searchParams.limit)) }, (_, i) => {
-                      const pageNum = Math.max(1, searchParams.page - 2) + i
-                      const totalPages = Math.ceil((data?.total || 0) / searchParams.limit)
-
-                      if (pageNum > totalPages) return null
-
-                      return (
-                        <button
-                          key={pageNum}
-                          onClick={() => handlePageChange(pageNum)}
-                          className={`w-12 h-12 rounded-full font-bold flex items-center justify-center shadow-lg transition-all duration-300 ${
-                            pageNum === searchParams.page
-                              ? "bg-brown-primary text-white"
-                              : "bg-white text-brown-secondary hover:bg-brown-secondary hover:text-white"
-                          }`}
-                        >
-                          {pageNum}
-                        </button>
-                      )
-                    })}
-                  </div>
-                  <span className="text-brown-secondary font-medium">
-                    of {Math.ceil((data?.total || 0) / searchParams.limit)}
-                  </span>
-                </div>
-
-                <button
-                  onClick={() => handlePageChange(searchParams.page + 1)}
-                  disabled={!data || searchParams.page >= Math.ceil(data.total / searchParams.limit)}
-                  className="flex items-center gap-2 p-4 rounded-full bg-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-xl transition-all duration-300 group"
-                >
-                  <span className="text-brown-secondary group-hover:text-brown-primary font-medium">Next</span>
-                  <ChevronRight className="w-6 h-6 text-brown-secondary group-hover:text-brown-primary" />
-                </button>
-              </div>
+              {/* Використання компонента Pagination */}
+              <Pagination 
+                currentPage={searchParams.page}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+              />
             </>
           ) : (
             /* No Results */
