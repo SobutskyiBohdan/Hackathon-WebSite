@@ -31,7 +31,7 @@ const getInitialState = () => {
     }
   } catch (error) {
     console.error("❌ Error initializing auth state from storage:", error)
-    // clearAuthData()
+    clearAuthData()
     return {
       user: null,
       token: null,
@@ -95,7 +95,7 @@ const authSlice = createSlice({
       state.isAuthenticated = false
       state.isInitialized = true
 
-      // clearAuthData()
+      clearAuthData()
       console.log("🚪 User logged out")
     },
     initializeAuth: (state) => {
@@ -124,7 +124,6 @@ const authSlice = createSlice({
           state.user = null
           state.token = null
           state.isAuthenticated = false
-          // clearAuthData()
           console.log("🔄 Auth state cleared - incomplete data")
         }
       } catch (error) {
@@ -132,7 +131,7 @@ const authSlice = createSlice({
         state.user = null
         state.token = null
         state.isAuthenticated = false
-        // clearAuthData()
+        clearAuthData()
       } finally {
         state.isInitialized = true
       }
