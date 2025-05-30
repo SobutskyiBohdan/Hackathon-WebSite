@@ -138,7 +138,6 @@ class BookListView(BookQuerysetMixin, ListAPIView):
 
 
 class BookDetailView(BookQuerysetMixin, RetrieveAPIView):
-    permission_classes = [permissions.IsAuthenticated]
     serializer_class = BookSerializer
     
     def retrieve(self, request, *args, **kwargs):
